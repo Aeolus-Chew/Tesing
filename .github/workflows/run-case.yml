@@ -1,26 +1,28 @@
-name: Autonomous Case Engine Run
+name: Autonomous Case AI Engine
 
+# 1. Trigger the workflow when an issue is labeled
 on:
   issues:
     types: [labeled]
 
 jobs:
-  execute-case-ai:
+  launch-case-ai:
+    # 2. Only run if the 'run-case' label is applied
     if: github.event.label.name == 'run-case'
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Code Layout
+      - name: Checkout Repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Install Runtime Environment (Bun)
+      - name: Setup Bun (Case Runtime)
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
 
-      - name: Build Case Framework Binary
+      - name: Prepare Case Binary
         run: |
           git clone https://github.com/workos/case.git /tmp/case
           cd /tmp/case
@@ -28,10 +30,11 @@ jobs:
           bun run build:binary
           sudo cp dist/ca /usr/local/bin/ca
 
-      - name: Run Case Against Issue Number
+      - name: Execute Case Harness
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          # Executes Case against the issue that triggered the workflow
           ca ${{ github.event.issue.number }}
